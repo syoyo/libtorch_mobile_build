@@ -10,14 +10,12 @@ message(STATUS "TorchDIR : " ${Torch_DIR})
 #set(Torch_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libtorch_android/share/cmake/Torch/")
 #find_package(Torch REQUIRED)
 
+find_package(Threads REQUIRED)
+
 set(TORCH_INCLUDE_DIRS
   ${Torch_DIR}/include/
   ${Torch_DIR}/include/torch/csrc/api/include
   )
-
-# Add source to this project's executable.
-add_executable (testmain "libtorch-test.cpp" "libtorch-test.h")
-target_include_directories(testmain PRIVATE ${TORCH_INCLUDE_DIRS})
 
 if (ANDROID)
 
@@ -37,9 +35,12 @@ if (ANDROID)
   import_static_lib(libcpuinfo)
   import_static_lib(libclog)
 
+  # Add source to this project's executable.
+  #add_executable (testmain "libtorch-test.cpp" "libtorch-test.h")
+  #target_include_directories(testmain PRIVATE ${TORCH_INCLUDE_DIRS})
+  add_library (torch SHARED "libtorch-test.cpp")
 
-  # Link most things statically on Android.
-  target_link_libraries(testmain
+  target_link_libraries(torch
       -Wl,--gc-sections
       -Wl,--whole-archive
       libtorch
@@ -50,9 +51,42 @@ if (ANDROID)
       libeigen_blas
       libcpuinfo
       libclog
-    log
-    android
+      android
+      log
+      Threads::Threads
   )
+  target_include_directories(torch PRIVATE ${TORCH_INCLUDE_DIRS})
+
+
+  ## Link most things statically on Android.
+  #target_link_libraries(torch
+  #    -Wl,--gc-sections
+  #    -Wl,--whole-archive
+  #    libtorch
+  #    -Wl,--no-whole-archive
+  #    libc10
+  #    libnnpack
+  #    libpytorch_qnnpack
+  #    libeigen_blas
+  #    libcpuinfo
+  #    libclog
+  #)
+
+  ## Link most things statically on Android.
+  #target_link_libraries(testmain
+  #    -Wl,--gc-sections
+  #    -Wl,--whole-archive
+  #    libtorch
+  #    -Wl,--no-whole-archive
+  #    libc10
+  #    libnnpack
+  #    libpytorch_qnnpack
+  #    libeigen_blas
+  #    libcpuinfo
+  #    libclog
+  #  log
+  #  android
+  #)
 
 
 else (ANDROID)
