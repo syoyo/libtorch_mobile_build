@@ -31,16 +31,19 @@ int main(int argc, char **argv)
 
   // Create a vector of inputs.
   std::vector<torch::jit::IValue> inputs;
-  inputs.push_back(torch::ones({1, 3, 224, 224}));
+  inputs.push_back(torch::ones({1, 80, 60}));
 
   // Disable autograd otherwise backward op error will happen
   // (e.g. Unknown builtin op: aten::_adaptive_avg_pool2d_backward)
   JITCallGuard guard;
 
   // Execute the model and turn its output into a tensor.
-  at::Tensor output = module.forward(inputs).toTensor();
+  //at::Tensor output = module.forward(inputs).toTensor();
+  auto outputs = module.forward(inputs).toTuple();
+	torch::Tensor outZ = outputs->elements()[1].toTensor(); 
 
   std::cout << "bora\n";
+	std::cout << outZ  << std::endl;
 
 	return 0;
 }
