@@ -12,12 +12,13 @@ message(STATUS "TorchDIR : " ${Torch_DIR})
 
 find_package(Threads REQUIRED)
 
-set(TORCH_INCLUDE_DIRS
-  ${Torch_DIR}/include/
-  ${Torch_DIR}/include/torch/csrc/api/include
-  )
 
 if (ANDROID)
+
+  set(TORCH_INCLUDE_DIRS
+    ${Torch_DIR}/include/
+    ${Torch_DIR}/include/torch/csrc/api/include
+    )
 
   function(import_static_lib name)
     add_library(${name} STATIC IMPORTED)
@@ -91,17 +92,62 @@ if (ANDROID)
 
 else (ANDROID)
 
-  # specify pytroch_qnnpack twice for the workaround of resolving a cyclic dependency of symbols in pytorch_qnnpack and torch
-  set(TORCH_LIBRARIES
-    ${Torch_DIR}/lib/libeigen_blas.a
-    ${Torch_DIR}/lib/libnnpack.a
-    ${Torch_DIR}/lib/libpytorch_qnnpack.a
-    ${Torch_DIR}/lib/libtorch.a
-    ${Torch_DIR}/lib/libpytorch_qnnpack.a
-    ${Torch_DIR}/lib/libc10.a
-    ${Torch_DIR}/lib/libcpuinfo.a
-    ${Torch_DIR}/lib/libclog.a
+  #find_package(Torch REQUIRED)
+
+  set(TORCH_INCLUDE_DIRS
+    ${Torch_DIR}/include/
+    ${Torch_DIR}/include/torch/csrc/api/include
     )
+
+  function(import_static_lib name)
+    add_library(${name} STATIC IMPORTED)
+    set_property(
+        TARGET ${name}
+        PROPERTY IMPORTED_LOCATION
+        ${Torch_DIR}/lib/${name}.a)
+  endfunction(import_static_lib)
+
+  import_static_lib(libtorch)
+  import_static_lib(libtorch_cpu)
+  import_static_lib(libc10)
+  import_static_lib(libnnpack)
+  import_static_lib(libpytorch_qnnpack)
+  import_static_lib(libeigen_blas)
+  import_static_lib(libcpuinfo)
+  import_static_lib(libclog)
+
+  add_executable (torchtest "libtorch-test.cpp" "libtorch-test.h")
+  target_include_directories(torchtest PRIVATE ${TORCH_INCLUDE_DIRS})
+
+  #target_include_directories(testmain PRIVATE ${TORCH_INCLUDE_DIRS})
+  # target_link_libraries(torchtest PRIVATE ${TORCH_LIBRARIES})
+
+  target_link_libraries(torchtest
+      -Wl,--gc-sections
+      -Wl,--whole-archive
+      libtorch
+      libtorch_cpu
+      -Wl,--no-whole-archive
+      libc10
+      libnnpack
+      libpytorch_qnnpack
+      libeigen_blas
+      libcpuinfo
+      libclog
+      Threads::Threads
+  )
+
+  # specify pytroch_qnnpack twice for the workaround of resolving a cyclic dependency of symbols in pytorch_qnnpack and torch
+  #set(TORCH_LIBRARIES
+  #  ${Torch_DIR}/lib/libeigen_blas.a
+  #  ${Torch_DIR}/lib/libnnpack.a
+  #  ${Torch_DIR}/lib/libpytorch_qnnpack.a
+  #  ${Torch_DIR}/lib/libtorch.a
+  #  ${Torch_DIR}/lib/libpytorch_qnnpack.a
+  #  ${Torch_DIR}/lib/libc10.a
+  #  ${Torch_DIR}/lib/libcpuinfo.a
+  #  ${Torch_DIR}/lib/libclog.a
+  #  )
 
 endif (ANDROID)
 
