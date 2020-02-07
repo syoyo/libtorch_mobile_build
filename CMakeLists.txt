@@ -3,7 +3,10 @@
 #
 cmake_minimum_required(VERSION 3.8.0)
 project(main)
-#set(CMAKE_CXX_STANDARD 14)
+
+set(CMAKE_CXX_STANDARD 17)
+
+set(TARGET_NAME torchtest)
 
 message(STATUS "CURDIR : " ${CMAKE_CURRENT_SOURCE_DIR})
 message(STATUS "TorchDIR : " ${Torch_DIR})
@@ -37,11 +40,11 @@ if (ANDROID)
   import_static_lib(libclog)
 
   # Add source to this project's executable.
-  #add_executable (testmain "libtorch-test.cpp" "libtorch-test.h")
+  add_executable (${TARGET_NAME} "libtorch-test.cpp" "libtorch-test.h")
   #target_include_directories(testmain PRIVATE ${TORCH_INCLUDE_DIRS})
-  add_library (torch SHARED "libtorch-test.cpp")
+  #add_library (${TARGET_NAME} SHARED "libtorch-test.cpp")
 
-  target_link_libraries(torch
+  target_link_libraries(${TARGET_NAME}
       -Wl,--gc-sections
       -Wl,--whole-archive
       libtorch
@@ -56,8 +59,10 @@ if (ANDROID)
       log
       Threads::Threads
   )
-  target_include_directories(torch PRIVATE ${TORCH_INCLUDE_DIRS})
+  target_include_directories(${TARGET_NAME} PRIVATE ${TORCH_INCLUDE_DIRS})
 
+  # strip symbols. it drastically reduce .so size(480MB before strip -> 20MB after strip for pytorch v1.4.0)
+  set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
 
   ## Link most things statically on Android.
   #target_link_libraries(torch
