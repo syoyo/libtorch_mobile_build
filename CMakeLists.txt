@@ -113,13 +113,40 @@ else (ANDROID)
   endfunction(import_static_lib)
 
   import_static_lib(libtorch)
-  import_static_lib(libtorch_cpu)
+
+
+  if (EXISTS "${Torch_DIR}/lib/libtorch_cpu.a")
+    message(STATUS "libtorch_cpu found")
+    import_static_lib(libtorch_cpu)
+    set(LIBTORCH_CPU libtorch_cpu)
+  endif ()
+
   import_static_lib(libc10)
   import_static_lib(libnnpack)
   import_static_lib(libpytorch_qnnpack)
   import_static_lib(libeigen_blas)
   import_static_lib(libcpuinfo)
   import_static_lib(libclog)
+
+  set(LIBTORCH_LIBRARIES
+      -Wl,--gc-sections
+      -Wl,--whole-archive
+      libtorch
+     )
+
+  if (LIBTORCH_CPU_FOUND)
+     list(APPEND LIBTORCH_LIBRARIES libtorch_cpu)
+  endif()
+
+  list(APPEND LIBTORCH_LIBRARIES
+      -Wl,--no-whole-archive
+      libc10
+      libnnpack
+      libpytorch_qnnpack
+      libeigen_blas
+      libcpuinfo
+      libclog
+      )
 
   add_executable (torchtest "libtorch-test.cpp" "libtorch-test.h")
   target_include_directories(torchtest PRIVATE ${TORCH_INCLUDE_DIRS})
@@ -128,18 +155,8 @@ else (ANDROID)
   # target_link_libraries(torchtest PRIVATE ${TORCH_LIBRARIES})
 
   target_link_libraries(torchtest
-      -Wl,--gc-sections
-      -Wl,--whole-archive
-      libtorch
-      libtorch_cpu
-      -Wl,--no-whole-archive
-      libc10
-      libnnpack
-      libpytorch_qnnpack
-      libeigen_blas
-      libcpuinfo
-      libclog
-      Threads::Threads
+    ${LIBTORCH_LIBRARIES}
+    Threads::Threads
   )
 
   # specify pytroch_qnnpack twice for the workaround of resolving a cyclic dependency of symbols in pytorch_qnnpack and torch
@@ -156,15 +173,3 @@ else (ANDROID)
 
 endif (ANDROID)
 
-
-# The following code block is suggested to be used on Windows.
-# According to https://github.com/pytorch/pytorch/issues/25457,
-# the DLLs need to be copied to avoid memory errors.
-if (MSVC)
-  file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-  add_custom_command(TARGET main
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     ${TORCH_DLLS}
-                     $<TARGET_FILE_DIR:main>)
-endif (MSVC)
