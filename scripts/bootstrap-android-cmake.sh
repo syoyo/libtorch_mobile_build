@@ -22,10 +22,11 @@ cd ${BUILD_DIR}
 
 ## NOTE: gnustl fails to compile json.hpp : https://github.com/nlohmann/json/issues/219
 $CMAKE_BIN \
+-DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_VERBOSE_MAKEFILE=1 \
 -DTorch_DIR=$torch_dir \
 -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
 -DANDROID_ABI=arm64-v8a \
 -DANDROID_NATIVE_API_LEVEL=28 \
--DANDROID_STL=c++_shared \
+-DANDROID_STL=c++_static \
 ..

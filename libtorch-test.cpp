@@ -19,10 +19,12 @@ int main(int argc, char **argv)
 	torch::Tensor tensor = torch::rand({ 2, 3 });
 	std::cout << tensor << std::endl;
 
-  torch::jit::script::Module module;
+  torch::jit::script::Module text2mel_module;
+  torch::jit::script::Module ssrn_module;
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
-    module = torch::jit::load(argv[1]);
+    text2mel_module = torch::jit::load(argv[1]);
+    ssrn_module = torch::jit::load(argv[2]);
   }
   catch (const c10::Error& e) {
     std::cerr << "error loading the model\n";
@@ -31,6 +33,18 @@ int main(int argc, char **argv)
 
   // Create a vector of inputs.
   std::vector<torch::jit::IValue> inputs;
+
+  // For text2mel
+  //L.shape torch.Size([1, 43]), int64 type
+  //Y.shape torch.Size([1, 80, 1])
+  //auto Loptions =
+  //  torch::TensorOptions()
+  //    .dtype(torch::kInt64);
+
+  //inputs.push_back(torch::ones({1, 43}, Loptions));
+  //inputs.push_back(torch::ones({1, 80, 1}));
+
+  // For ssrn
   inputs.push_back(torch::ones({1, 80, 60}));
 
   // Disable autograd otherwise backward op error will happen
@@ -38,11 +52,17 @@ int main(int argc, char **argv)
   JITCallGuard guard;
 
   // Execute the model and turn its output into a tensor.
-  //at::Tensor output = module.forward(inputs).toTensor();
-  auto outputs = module.forward(inputs).toTuple();
-	torch::Tensor outZ = outputs->elements()[1].toTensor(); 
+  // For text2mel
+  //auto outputs = module.forward(inputs).toTuple();
+  // _, Y_t, A
+	//torch::Tensor outY_t = outputs->elements()[1].toTensor();
 
-  std::cout << "bora\n";
+  //std::cout << "bora\n";
+	//std::cout << outY_t  << std::endl;
+  // For ssrn
+  auto outputs = ssrn_module.forward(inputs).toTuple();
+	torch::Tensor outZ = outputs->elements()[1].toTensor();
+
 	std::cout << outZ  << std::endl;
 
 	return 0;
